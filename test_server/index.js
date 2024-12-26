@@ -59,7 +59,7 @@ const cropImage = async (imageBuffer, outputPath) => {
         const left = width * 0.3; // 이미지의 20% 지점에서 시작
         const top = height * 0.2; // 이미지의 30% 지점에서 시작
         const cropWidth = width * 0.2; // 이미지의 60% 너비
-        const cropHeight = height * 0.3; // 이미지의 40% 높이
+        const cropHeight = height * 0.1; // 이미지의 40% 높이
 
         await image
             .extract({ left: Math.floor(left), top: Math.floor(top), width: Math.floor(cropWidth), height: Math.floor(cropHeight) })
@@ -68,6 +68,10 @@ const cropImage = async (imageBuffer, outputPath) => {
         console.error('Failed to crop image:', error.message);
         throw error;
     }
+};
+
+const transformOCRText = (text) => {
+    return text.replace(/ /g, '').replace(/\//g, '7').replace(/!/g, '1').replace(/\|/g, '1');
 };
 
 app.get('/images', async (req, res) => {
@@ -127,7 +131,11 @@ app.get('/images', async (req, res) => {
 
             const croppedImageBuffer = await fs.promises.readFile(croppedImagePath);
 
-            const ocrResultText = await performOCR(croppedImageBuffer);
+            let ocrResultText = await performOCR(croppedImageBuffer);
+            if (ocrResultText) {
+                ocrResultText = transformOCRText(ocrResultText);
+            }
+
             const timestamp = new Date().toLocaleString();
             const base64CroppedImage = croppedImageBuffer.toString('base64');
 

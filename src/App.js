@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
     const [ticketNumber, setTicketNumber] = useState('');
@@ -15,6 +17,11 @@ function App() {
         return !isNaN(value) && value.trim() !== '';
     };
 
+    const findNumbersInString = (str) => {
+        const numbers = str.match(/\d+/g);
+        return numbers ? numbers.map(Number) : [];
+    };
+
     useEffect(() => {
         const fetchImage = async () => {
             try {
@@ -25,6 +32,7 @@ function App() {
                     setImageUpdatedTime(data.timestamp);
                     setOcrResult(data.ocrResult);
                     setError(null);
+                    setCurrentNumber(data.ocrResult);
                 } else {
                     throw new Error(data.error);
                 }
@@ -41,7 +49,7 @@ function App() {
         return () => clearInterval(interval);
     }, []);
 
-    useEffect(() => {
+/*    useEffect(() => {
         const interval = setInterval(() => {
             setCurrentNumber(prev => {
                 const newNumber = prev + 1;
@@ -54,6 +62,15 @@ function App() {
 
         return () => clearInterval(interval);
     }, [ticketNumber]);
+*/
+    useEffect(() => {
+        const ticketNum = parseInt(ticketNumber);
+        const ocrNumbers = findNumbersInString(ocrResult);
+
+        if (ocrNumbers.some(num => num >= ticketNum)) {
+            toast(`${ticketNumber} 음료가 나왔습니다.`);
+        }
+    }, [ocrResult, ticketNumber]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -72,41 +89,45 @@ function App() {
     };
 
     return (
-        <form onSubmit={handleSubmit} style={{ textAlign: 'center' }}>
-            <h1>커피 대기 알림</h1>
-            <p>현재 번호: {currentNumber}</p>
-            <input
-                type="number"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                ref={inputRef}
-                placeholder="대기표 번호 입력"
-            />
-            <button type="submit">
-                제출
-            </button>
-            {error && <p style={{ color: 'red' }}>{error}</p>}
-            {alertVisible && (
-                <div>
-                    <p>알림: 당신의 커피가 준비되었습니다!</p>
-                    <button onClick={handleCloseAlert}>닫기</button>
-                    {imageBase64 && (
-                        <>
-                            <p>이미지 업데이트 시간: {imageUpdatedTime}</p>
-                            <img src={imageBase64} alt="Downloaded" style={{ maxWidth: '100%', height: 'auto' }} />
-                            <p>추출된 숫자: {ocrResult}</p>
-                        </>
-                    )}
-                </div>
-            )}
-            {imageBase64 && (
-                <>
-                    <p>이미지 업데이트 시간: {imageUpdatedTime}</p>
-                    <img src={imageBase64} alt="Downloaded" style={{ maxWidth: '100%', height: 'auto' }} />
-                    <p>추출된 숫자: {ocrResult}</p>
-                </>
-            )}
-        </form>
+        <div style={{ textAlign: 'center' }}>
+            <form onSubmit={handleSubmit}>
+                <h1>커피 대기 알림</h1>
+                <p>현재 번호: {currentNumber}</p>
+                <p>내 번호: {ticketNumber}</p>
+                <input
+                    type="number"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    ref={inputRef}
+                    placeholder="대기표 번호 입력"
+                />
+                <button type="submit">
+                    제출
+                </button>
+                {error && <p style={{ color: 'red' }}>{error}</p>}
+                {alertVisible && (
+                    <div>
+                        <p>알림: 당신의 커피가 준비되었습니다!</p>
+                        <button onClick={handleCloseAlert}>닫기</button>
+                        {imageBase64 && (
+                            <>
+                                <p>이미지 업데이트 시간: {imageUpdatedTime}</p>
+                                <img src={imageBase64} alt="Downloaded" style={{ maxWidth: '100%', height: 'auto' }} />
+                                <p>추출된 숫자: {ocrResult}</p>
+                            </>
+                        )}
+                    </div>
+                )}
+                {imageBase64 && (
+                    <>
+                        <p>이미지 업데이트 시간: {imageUpdatedTime}</p>
+                        <img src={imageBase64} alt="Downloaded" style={{ maxWidth: '100%', height: 'auto' }} />
+                        <p>추출된 숫자: {ocrResult}</p>
+                    </>
+                )}
+            </form>
+            <ToastContainer />
+        </div>
     );
 }
 
