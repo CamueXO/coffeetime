@@ -18,16 +18,20 @@ function App() {
     useEffect(() => {
         const fetchImage = async () => {
             try {
-                const response = await fetch('http://localhost:3001/images');
-                const data = await response.json();
-                if (response.ok) {
+                const responseImg = await fetch('http://localhost:3001/static/downloaded_image.jpg');
+                const responseTime = await fetch('http://localhost:3001/getLastGetImagineTime');
+                const data = await responseTime.json();
+                if (responseImg.ok) {
                     setImageUrl(`http://localhost:3001/static/downloaded_image.jpg?timestamp=${new Date().getTime()}`);
-                    setImageUpdatedTime(data.timestamp); // 서버에서 받은 시간으로 설정
+                    setImageUpdatedTime(data?.timestamp??'No Time data'); // 서버에서 받은 시간으로 설정
                 } else {
                     console.error('이미지를 가져오는 데 실패했습니다.');
+                    setImageUpdatedTime('No CCTV data');
                 }
             } catch (error) {
+                setImageUpdatedTime('No Time data');
                 console.error('이미지를 가져오는 중 오류가 발생했습니다:', error);
+                
             }
         };
 
