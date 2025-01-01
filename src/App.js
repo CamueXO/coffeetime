@@ -17,7 +17,9 @@ function App() {
 
     useEffect(() => {
         const fetchImage = async () => {
-            const serverUrl = process.env.SERVER_URL || 'http://localhost:3001';
+            const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
+            console.log('서버 URL:', serverUrl);
+            console.log('REACT_APP_SERVER_URL:', process.env.REACT_APP_SERVER_URL);
             try {
                 const responseImg = await fetch(`${serverUrl}/static/downloaded_image.jpg`);
                 const responseTime = await fetch(`${serverUrl}/getLastGetImagineTime`);
