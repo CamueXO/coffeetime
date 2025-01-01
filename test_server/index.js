@@ -5,6 +5,7 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const { CronJob } = require('cron');
+
 const app = express();
 
 app.use(cors());
@@ -44,11 +45,12 @@ const openHiddenBrowser = async () => {
     }
 };
 
-// 오전 7시부터 오후 5시까지 5초마다 이미지를 가져오는 스케줄러
+// 평일 오전 7시부터 오후 5시까지 5초마다 이미지를 가져오는 스케줄러
+// 지금은 테스트용으로 매일 시간무관하게 1분마다 이미지를 가져오도록 설정
 const getImageScheduler = async () => {
     try {
-        //const job = new CronJob('*/5 * * * * *', getHanwha701Image, null, true, 'Asia/Seoul'); // 시간에 관계없이 5초마다 실행됨 - 테스트용
-        const job = new cron.CronJob('*/5 * 7-17 * * *', getHanwha701Image, null, true, 'Asia/Seoul');
+        //const job = new CronJob('*/5 * 7-17 * * 1-5', getHanwha701Image, null, true, 'Asia/Seoul');
+        const job = new CronJob('*/1 * * * *', getHanwha701Image, null, true, 'Asia/Seoul');
 
         console.log("Start Image Scheduler");
         job.start();
