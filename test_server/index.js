@@ -74,6 +74,17 @@ const transformOCRText = (text) => {
     return text.replace(/ /g, '').replace(/\//g, '7').replace(/!/g, '1').replace(/\|/g, '1');
 };
 
+const validateOCRText = async (text, imageBuffer) => {
+    if (text.length > 3) {
+        console.log('OCR result is invalid, retrying...');
+        const newText = await performOCR(imageBuffer);
+        if (newText) {
+            return transformOCRText(newText);
+        }
+    }
+    return text;
+};
+
 app.get('/images', async (req, res) => {
     const targetUrl = 'https://www.hanwha701.com';
     let page;
@@ -133,7 +144,7 @@ app.get('/images', async (req, res) => {
 
             let ocrResultText = await performOCR(croppedImageBuffer);
             if (ocrResultText) {
-                ocrResultText = transformOCRText(ocrResultText);
+                ocrResultText = await validateOCRText(ocrResultText, croppedImageBuffer);
             }
 
             const timestamp = new Date().toLocaleString();
