@@ -1,10 +1,6 @@
 {
-  "name": "커피 대기 알림",
-  "short_name": "커피 알림",
-  "start_url": ".",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "description": "커피 대기 알림 PWA",
+  "short_name": "React App",
+  "name": "Create React App Sample",
   "icons": [
     {
       "src": "favicon.ico",
@@ -22,4 +18,8 @@
       "sizes": "512x512"
     }
   ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
 }

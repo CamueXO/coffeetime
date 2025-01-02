@@ -11,7 +11,6 @@ function App() {
     const [imageUpdatedTime, setImageUpdatedTime] = useState('');
     const [ocrResult, setOcrResult] = useState('');
     const [error, setError] = useState(null);
-    const [inputTime, setInputTime] = useState(null); // 숫자를 입력한 시간을 저장하는 상태
     const inputRef = useRef(null);
 
     const isNumber = (value) => {
@@ -21,11 +20,6 @@ function App() {
     const findNumbersInString = (str) => {
         const numbers = str.match(/\d+/g);
         return numbers ? numbers.map(Number) : [];
-    };
-
-    const getTimeDifferenceInMinutes = (startTime, endTime) => {
-        const diffInMs = Math.abs(endTime - startTime);
-        return Math.floor(diffInMs / 1000 / 60); // 밀리초 단위를 분 단위로 변환
     };
 
     useEffect(() => {
@@ -55,16 +49,28 @@ function App() {
         return () => clearInterval(interval);
     }, []);
 
+/*    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentNumber(prev => {
+                const newNumber = prev + 1;
+                if (isNumber(ticketNumber) && ticketNumber.length > 1 && newNumber === parseInt(ticketNumber)) {
+                    setAlertVisible(true);
+                }
+                return newNumber;
+            });
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [ticketNumber]);
+*/
     useEffect(() => {
         const ticketNum = parseInt(ticketNumber);
         const ocrNumbers = findNumbersInString(ocrResult);
 
         if (ocrNumbers.some(num => num >= ticketNum)) {
-            const now = new Date();
-            const waitingTime = getTimeDifferenceInMinutes(inputTime, now);
-            notify(`${ticketNumber} 음료가 나왔습니다. (대기시간: ${waitingTime}분)`);
+            toast(`${ticketNumber} 음료가 나왔습니다.`);
         }
-    }, [ocrResult, ticketNumber, inputTime]);
+    }, [ocrResult, ticketNumber]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -74,30 +80,12 @@ function App() {
         }
         setTicketNumber(inputValue);
         setInputValue('');
-        setInputTime(new Date()); // 숫자를 입력한 시간을 저장
         inputRef.current.focus();
     };
 
     const handleCloseAlert = () => {
         setAlertVisible(false);
         setImageBase64('');
-    };
-
-    const notify = (message) => {
-        if ('Notification' in window && navigator.serviceWorker) {
-            Notification.requestPermission().then(permission => {
-                if (permission === 'granted') {
-                    navigator.serviceWorker.ready.then(registration => {
-                        registration.showNotification('커피 대기 알림', {
-                            body: message,
-                            icon: '/icon-192x192.png',
-                        });
-                    });
-                }
-            });
-        } else {
-            toast(message);
-        }
     };
 
     return (
