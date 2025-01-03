@@ -25,3 +25,6 @@ yarn-error.log*
 
 # local files
 /test_server/downloaded_image.jpg
+/test_server/downloaded_image_cropped.jpg
+
+kor.traineddata

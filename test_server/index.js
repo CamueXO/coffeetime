@@ -15,6 +15,7 @@ app.use(cors());
 
 let browser;
 let lastGetImagineTime;
+let ocrResultText;
 
 const httpsAgent = new https.Agent({
     rejectUnauthorized: false,
@@ -24,6 +25,10 @@ app.use('/static', express.static(path.join(__dirname)));
 
 app.use('/getLastGetImagineTime', (req, res) => {
     res.json({ timestamp : lastGetImagineTime });
+});
+
+app.use('/getOcrResult', (req, res) => {
+    res.json({ ocrResult : ocrResultText });
 });
 
 // puppeteer 브라우저를 오픈한다.
@@ -164,11 +169,11 @@ const getHanwha701Image = async () => {
 
             await cropImage(imageBuffer, croppedImagePath);
             lastGetImagineTime = new Date().toLocaleString();// 이미지 저장 시간
-            console.log('Image saved at:', imagePath);
+            console.log('Image saved at:', croppedImagePath);
           
             const croppedImageBuffer = await fs.promises.readFile(croppedImagePath);
 
-            let ocrResultText = await performOCR(croppedImageBuffer);
+            ocrResultText = await performOCR(croppedImageBuffer);
             if (ocrResultText) {
                 ocrResultText = await validateOCRText(ocrResultText, croppedImageBuffer);
             }

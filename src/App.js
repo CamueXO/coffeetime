@@ -50,12 +50,15 @@ function App() {
                 const responseTime = await fetch(`${serverUrl}/getLastGetImagineTime`);
                 const ocrResult = await fetch(`${serverUrl}/getOcrResult`);
                 const data = await responseTime.json();
+                const ocrData = await ocrResult.json();
+
                 if (responseImg.ok) {
-                    setImageUrl(`${serverUrl}/static/downloaded_image_cropped.jpg?timestamp=${new Date().getTime()}`);
+                    // setImageUrl(`${serverUrl}/static/downloaded_image_cropped.jpg?timestamp=${new Date().getTime()}`);
+                    setImageBase64(`${serverUrl}/static/downloaded_image_cropped.jpg?timestamp=${new Date().getTime()}`);
                     setImageUpdatedTime(data?.timestamp ?? 'No Time data'); // 서버에서 받은 시간으로 설정                  
-                    setOcrResult(data?.ocrResult ?? 'No OCR data');                  
+                    setOcrResult(ocrData?.ocrResult ?? 'No OCR data');                  
                     setError(null);
-                    setCurrentNumber(data.ocrResult);
+                    setCurrentNumber(ocrData.ocrResult ?? '0');
                 } else {
                     console.error('이미지를 가져오는 데 실패했습니다.');
                     setImageUpdatedTime('No CCTV data');
