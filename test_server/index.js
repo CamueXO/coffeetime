@@ -168,7 +168,7 @@ const getHanwha701Image = async () => {
             const croppedImagePath = path.join(__dirname, 'downloaded_image_cropped.jpg');
 
             // 테스트용 실행일때에는 ../testimages 폴더의 이미지파일을 읽어서 imageBuffer에 저장하여 사용한다.
-            let testMode = true;
+            let testMode = false;
             if (testMode) {
                 // ../testimages 폴더의 파일중에 랜덤하게 하나를 고른다.
                 const testImageFiles = await fs.promises.readdir(path.join(__dirname, '../testimages'));
