@@ -6,9 +6,15 @@ const fs = require('fs');
 const path = require('path');
 const Tesseract = require('tesseract.js');
 const sharp = require('sharp');
+const { CronJob } = require('cron');
+
 const app = express();
 
 app.use(cors());
+
+
+let browser;
+let lastGetImagineTime;
 
 const httpsAgent = new https.Agent({
     rejectUnauthorized: false,
@@ -16,9 +22,12 @@ const httpsAgent = new https.Agent({
 
 app.use('/static', express.static(path.join(__dirname)));
 
-let browser;
+app.use('/getLastGetImagineTime', (req, res) => {
+    res.json({ timestamp : lastGetImagineTime });
+});
 
-(async () => {
+// puppeteer 브라우저를 오픈한다.
+const openHiddenBrowser = async () => {
     try {
         browser = await puppeteer.launch({
             headless: true,
@@ -28,15 +37,15 @@ let browser;
                 '--disable-dev-shm-usage',
                 '--disable-accelerated-2d-canvas',
                 '--disable-gpu',
-                '--single-process',
                 '--disable-extensions',
             ],
         });
         console.log('Browser launched successfully');
+        return browser;
     } catch (error) {
         console.error('Failed to launch browser:', error.message);
     }
-})();
+};
 
 const performOCR = async (imageBuffer) => {
     try {
@@ -85,7 +94,22 @@ const validateOCRText = async (text, imageBuffer) => {
     return text;
 };
 
-app.get('/images', async (req, res) => {
+// 평일 오전 7시부터 오후 5시까지 5초마다 이미지를 가져오는 스케줄러
+// 지금은 테스트용으로 매일 시간무관하게 1분마다 이미지를 가져오도록 설정
+const getImageScheduler = async () => {
+    try {
+        //const job = new CronJob('*/5 * 7-17 * * 1-5', getHanwha701Image, null, true, 'Asia/Seoul');
+        const job = new CronJob('*/1 * * * *', getHanwha701Image, null, true, 'Asia/Seoul');
+        console.log("Start Image Scheduler");
+        job.start();
+    } catch (error) {
+        console.error('Failed to start image scheduler:', error.message);
+    }
+};
+
+// hanwha701.com 에서 CCTV 이미지를 가져온다.
+const getHanwha701Image = async () => {
+    console.log("getHanwha701Image");
     const targetUrl = 'https://www.hanwha701.com';
     let page;
 
@@ -139,7 +163,9 @@ app.get('/images', async (req, res) => {
             const croppedImagePath = path.join(__dirname, 'downloaded_image_cropped.jpg');
 
             await cropImage(imageBuffer, croppedImagePath);
-
+            lastGetImagineTime = new Date().toLocaleString();// 이미지 저장 시간
+            console.log('Image saved at:', imagePath);
+          
             const croppedImageBuffer = await fs.promises.readFile(croppedImagePath);
 
             let ocrResultText = await performOCR(croppedImageBuffer);
@@ -150,26 +176,27 @@ app.get('/images', async (req, res) => {
             const timestamp = new Date().toLocaleString();
             const base64CroppedImage = croppedImageBuffer.toString('base64');
 
-            res.json({
-                message: ocrResultText ? 'OCR performed successfully' : 'Failed to perform OCR, but image is sent successfully',
-                timestamp,
-                ocrResult: ocrResultText || 'OCR 실패',
-                imageUrl: '/static/downloaded_image_cropped.jpg',
-                base64Image: base64CroppedImage
-            });
         } else {
             console.error('No images found on the page');
-            res.status(404).send('No images found on the page');
+            // res.status(404).send('No images found on the page');
         }
     } catch (error) {
-        console.error('Failed to fetch image:', error.message);
-        res.status(500).send(`Failed to fetch image: ${error.message}`);
+        console.error('Failed to fetch image URLs:', error.message);
+        // res.status(500).send(`Failed to fetch image URLs: ${error.message}`);
     } finally {
         if (page) {
             await page.close();
         }
     }
-});
+};
+
+const init = () =>{
+    console.log("Init Server Start !!");
+    openHiddenBrowser();
+    getImageScheduler();
+}
+
+init();
 
 app.listen(3001, () => {
     console.log('Server is running on http://localhost:3001');

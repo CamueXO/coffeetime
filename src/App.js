@@ -30,7 +30,11 @@ function App() {
 
     useEffect(() => {
         const fetchImage = async () => {
+            const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
+            console.log('서버 URL:', serverUrl);
+            console.log('REACT_APP_SERVER_URL:', process.env.REACT_APP_SERVER_URL);
             try {
+                /*
                 const response = await fetch('http://localhost:3001/images');
                 const data = await response.json();
                 if (response.ok) {
@@ -41,8 +45,23 @@ function App() {
                     setCurrentNumber(data.ocrResult);
                 } else {
                     throw new Error(data.error);
+                */
+                const responseImg = await fetch(`${serverUrl}/static/downloaded_image_cropped.jpg`);
+                const responseTime = await fetch(`${serverUrl}/getLastGetImagineTime`);
+                const ocrResult = await fetch(`${serverUrl}/getOcrResult`);
+                const data = await responseTime.json();
+                if (responseImg.ok) {
+                    setImageUrl(`${serverUrl}/static/downloaded_image_cropped.jpg?timestamp=${new Date().getTime()}`);
+                    setImageUpdatedTime(data?.timestamp ?? 'No Time data'); // 서버에서 받은 시간으로 설정                  
+                    setOcrResult(data?.ocrResult ?? 'No OCR data');                  
+                    setError(null);
+                    setCurrentNumber(data.ocrResult);
+                } else {
+                    console.error('이미지를 가져오는 데 실패했습니다.');
+                    setImageUpdatedTime('No CCTV data');
                 }
             } catch (error) {
+                setImageUpdatedTime('No Time data');
                 console.error('이미지를 가져오는 중 오류가 발생했습니다:', error);
                 setError(error.message);
             }
