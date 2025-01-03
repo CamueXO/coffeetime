@@ -167,7 +167,20 @@ const getHanwha701Image = async () => {
             const imageBuffer = Buffer.from(base64Data, 'base64');
             const croppedImagePath = path.join(__dirname, 'downloaded_image_cropped.jpg');
 
-            await cropImage(imageBuffer, croppedImagePath);
+            // 테스트용 실행일때에는 ../testimages 폴더의 이미지파일을 읽어서 imageBuffer에 저장하여 사용한다.
+            let testMode = true;
+            if (testMode) {
+                // ../testimages 폴더의 파일중에 랜덤하게 하나를 고른다.
+                const testImageFiles = await fs.promises.readdir(path.join(__dirname, '../testimages'));
+                const randomIndex = Math.floor(Math.random() * testImageFiles.length);
+                const randomImageFile = testImageFiles[randomIndex];
+                console.log('Random image file:', randomImageFile);
+                const testImage = await fs.promises.readFile(path.join(__dirname, '../testimages', randomImageFile));
+                const testImageBuffer = testImage;
+                await cropImage(testImageBuffer, croppedImagePath);
+            } else {
+                await cropImage(imageBuffer, croppedImagePath);
+            }
             lastGetImagineTime = new Date().toLocaleString();// 이미지 저장 시간
             console.log('Image saved at:', croppedImagePath);
           
