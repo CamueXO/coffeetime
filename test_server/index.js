@@ -56,6 +56,8 @@ const performOCR = async (imageBuffer) => {
     try {
         const { data: { text } } = await Tesseract.recognize(imageBuffer, 'kor', {
             logger: m => console.log(m),
+            // 숫자만 인식하도록 설정
+            tessedit_char_whitelist: '0123456789'
         });
         
         // 공백 없애기, / 를 7로 변환, !, | 를 1로 변환 
