@@ -165,7 +165,12 @@ const getHanwha701Image = async () => {
 
     try {
         if (!browser) {
-            throw new Error('Browser instance is not initialized');
+            // retry
+                console.log('Retrying to launch browser...');
+                browser = await openHiddenBrowser();
+                if (!browser) {
+                    throw new Error('Browser instance is not initialized');
+                }
         }
 
         page = await browser.newPage();
@@ -218,7 +223,7 @@ const getHanwha701Image = async () => {
           
             const croppedImageBuffer = await fs.promises.readFile(croppedImagePath);
 
-            let ocrResultText = await performOCR(croppedImageBuffer);
+            ocrResultText = await performOCR(croppedImageBuffer);
             if (ocrResultText) {
                 ocrResultText = await validateOCRText(ocrResultText, croppedImageBuffer);
             }
