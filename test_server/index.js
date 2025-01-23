@@ -13,6 +13,7 @@ const app = express();
 
 app.use(cors());
 
+
 let browser;
 let lastGetImagineTime;
 let ocrResult;
@@ -54,7 +55,7 @@ const openHiddenBrowser = async () => {
 
 const performOCR = async (imageBuffer) => {
     try {
-        const { data: { text } } = await Tesseract.recognize(imageBuffer, 'kor', {
+        const { data: { text } } = await Tesseract.recognize(imageBuffer, 'eng', {
             logger: m => console.log(m),
             // 숫자만 인식하도록 설정
             tessedit_char_whitelist: '0123456789'
@@ -69,6 +70,44 @@ const performOCR = async (imageBuffer) => {
         return numbersOnly;
     } catch (error) {
         console.error('Failed to perform OCR:', error.message);
+        return null;
+    }
+};
+
+
+const preprocessImage = async (imageBuffer) => {
+    try {
+        const image = sharp(imageBuffer);
+
+        // 이미지 전처리: 그레이스케일, 대비 증가
+        const processedBuffer = await image
+            .greyscale()
+            .normalise()
+            .toBuffer();
+
+        return processedBuffer;
+    } catch (error) {
+        console.error('Failed to preprocess image:', error.message);
+        throw error;
+    }
+};
+
+const performEnhancedOCR = async (imageBuffer) => {
+    try {
+        // 전처리된 이미지를 사용하여 OCR 수행
+        const preprocessedBuffer = await preprocessImage(imageBuffer);
+        const { data: { text } } = await Tesseract.recognize(preprocessedBuffer, 'eng', {
+            logger: m => console.log(m),
+            tessedit_char_whitelist: '0123456789',
+            psm: 6, // Page Segmentation Mode: Assume a single uniform block of text
+        });
+
+        let transformedText = text.replace(/ /g, '').replace(/\//g, '7').replace(/!/g, '1').replace(/\|/g, '1');
+        const numbersOnly = transformedText.match(/\d+/g)?.join('') || '';
+
+        return numbersOnly;
+    } catch (error) {
+        console.error('Failed to perform enhanced OCR:', error.message);
         return null;
     }
 };
@@ -93,6 +132,28 @@ const cropImage = async (imageBuffer, outputPath) => {
     }
 };
 
+const cropAndResizeImage = async (imageBuffer, outputPath) => {
+    try {
+        const image = sharp(imageBuffer);
+        const { width, height } = await image.metadata();
+
+        // 크롭할 영역의 좌표와 크기 설정
+        const left = width * 0.3; 
+        const top = height * 0.2; 
+        const cropWidth = width * 0.2; 
+        const cropHeight = height * 0.1; 
+
+        // 크롭 및 스케일 조정
+        await image
+            .extract({ left: Math.floor(left), top: Math.floor(top), width: Math.floor(cropWidth), height: Math.floor(cropHeight) })
+            .resize({ width: Math.floor(cropWidth / 3), height: Math.floor(cropHeight / 3) }) // 스케일 줄이기
+            .toFile(outputPath);
+    } catch (error) {
+        console.error('Failed to crop and resize image:', error.message);
+        throw error;
+    }
+};
+
 const transformOCRText = (text) => {
     return text.replace(/ /g, '').replace(/\//g, '7').replace(/!/g, '1').replace(/\|/g, '1');
 };
@@ -113,7 +174,7 @@ const validateOCRText = async (text, imageBuffer) => {
 const getImageScheduler = async () => {
     try {
         //const job = new CronJob('*/5 * 7-17 * * 1-5', getHanwha701Image, null, true, 'Asia/Seoul');
-        const job = new CronJob('*/1 * * * *', getHanwha701Image, null, true, 'Asia/Seoul');
+        const job = new CronJob('*/5 * * * * *', getHanwha701Image, null, true, 'Asia/Seoul');
         console.log("Start Image Scheduler");
         job.start();
     } catch (error) {
@@ -124,7 +185,7 @@ const getImageScheduler = async () => {
 // 로컬 testimages 디렉터리에서 랜덤하게 이미지 파일을 선택하여 OCR을 수행
 const getLocalTestImage = async () => {
     try {
-        const imagesDir = path.join(__dirname, '..', 'testimages'); // 상위 디렉터리에 위치한 testimages 폴더
+        const imagesDir = path.join(__dirname, 'testimages'); // 상위 디렉터리에 위치한 testimages 폴더
         const files = fs.readdirSync(imagesDir);
         const randomFile = files[Math.floor(Math.random() * files.length)];
         const imagePath = path.join(imagesDir, randomFile);
@@ -134,13 +195,13 @@ const getLocalTestImage = async () => {
         const imageBuffer = fs.readFileSync(imagePath);
         const croppedImagePath = path.join(__dirname, 'downloaded_image_cropped.jpg');
 
-        await cropImage(imageBuffer, croppedImagePath);
+        await cropAndResizeImage(imageBuffer, croppedImagePath);
         lastGetImagineTime = new Date().toLocaleString(); // 이미지 저장 시간
         console.log('Image saved at:', croppedImagePath);
       
         const croppedImageBuffer = await fs.promises.readFile(croppedImagePath);
 
-        let ocrResultText = await performOCR(croppedImageBuffer);
+        let ocrResultText = await performEnhancedOCR(croppedImageBuffer);//performOCR(croppedImageBuffer);
         if (ocrResultText) {
             ocrResultText = await validateOCRText(ocrResultText, croppedImageBuffer);
         }
@@ -217,13 +278,13 @@ const getHanwha701Image = async () => {
             const imageBuffer = Buffer.from(base64Data, 'base64');
             const croppedImagePath = path.join(__dirname, 'downloaded_image_cropped.jpg');
 
-            await cropImage(imageBuffer, croppedImagePath);
+            await cropAndResizeImage(imageBuffer, croppedImagePath);
             lastGetImagineTime = new Date().toLocaleString(); // 이미지 저장 시간
             console.log('Image saved at:', croppedImagePath);
           
             const croppedImageBuffer = await fs.promises.readFile(croppedImagePath);
 
-            ocrResultText = await performOCR(croppedImageBuffer);
+            ocrResultText = await performEnhancedOCR(croppedImageBuffer);
             if (ocrResultText) {
                 ocrResultText = await validateOCRText(ocrResultText, croppedImageBuffer);
             }
@@ -255,3 +316,8 @@ init();
 app.listen(3001, () => {
     console.log('Server is running on http://localhost:3001');
 });
+
+
+//https.createServer(options, app).listen(3001, () => {
+//     console.log('HTTPS Server running on https://192.168.0.8:3001'); 
+//});
