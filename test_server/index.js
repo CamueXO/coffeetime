@@ -166,7 +166,7 @@ const validateOCRText = async (text, imageBuffer) => {
             await fs.promises.writeFile(invalidImagePath, imageBuffer);
             console.log('Invalid image saved at:', invalidImagePath);
             
-            const newText = await performOCR(imageBuffer);
+            const newText = await performEnhancedOCR(imageBuffer);
             if (newText) {
                 return transformOCRText(newText);
             }
@@ -292,7 +292,7 @@ const getOrderDisplayServerImage = async () => {
           
             const croppedImageBuffer = await fs.promises.readFile(croppedImagePath);
 
-            let ocrResultText = await performOCR(croppedImageBuffer);
+            let ocrResultText = await performEnhancedOCR(croppedImageBuffer);
             if (ocrResultText) {
                 ocrResultText = await validateOCRText(ocrResultText, croppedImageBuffer);
             }
